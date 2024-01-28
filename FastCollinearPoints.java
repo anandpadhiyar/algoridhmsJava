@@ -4,118 +4,103 @@
  *  Last modified:     October 16, 1842
  **************************************************************************** */
 
-import edu.princeton.cs.algs4.In;
-import edu.princeton.cs.algs4.StdDraw;
-import edu.princeton.cs.algs4.StdOut;
-
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 public class FastCollinearPoints {
-
-    private final LineSegment[] segments;
+    private final LineSegment[] lineSegments;
 
     public FastCollinearPoints(Point[] points) {
-        if (points == null)
-            throw new IllegalArgumentException(
-                    "Argument can't be null, or have any null or repeated points");
+        if (points == null) throw new IllegalArgumentException();
+        Point[] mutatePoints = Arrays.copyOf(points, points.length);
 
-        Point[] mutablePoints = Arrays.stream(points).toArray(Point[]::new);
+        for (int i = 0; i < mutatePoints.length; i++) {
+            if (mutatePoints[i] == null) throw new IllegalArgumentException();
+        }
 
-        if (containsNullPoint(mutablePoints) || repeatedPoint(mutablePoints))
-            throw new IllegalArgumentException(
-                    "Argument can't be null, or have any null or repeated points");
+        Arrays.sort(mutatePoints);
 
-        List<LineSegment> tmpSegments = new LinkedList<>();
+        for (int i = 0; i < (mutatePoints.length - 1); i++) {
+            Point currPoint = mutatePoints[i];
+            Point nxtPoint = mutatePoints[i + 1];
+            if (currPoint.compareTo(nxtPoint) == 0) throw new IllegalArgumentException();
+        }
 
-        for (int i = 0; i < points.length; ++i) {
+        int n = mutatePoints.length;
+        if (n < 4) {
+            this.lineSegments = new LineSegment[0];
+            return;
+        }
+        List<LineSegment> tmpLineSegments = new LinkedList<>();
+        for (int i = 0; i < n; i++) {
             Point p = points[i];
-
-            Arrays.sort(mutablePoints, 0, points.length, p.slopeOrder());
-            int segmentStart = 1; // Skip index 0 always because it's slope of own point 'p'
-            int segmentSize = 1; // point 'p' counts as part of the segment
-            for (int q = segmentStart; q < points.length - 1; ++q) {
-                if (p.slopeTo(mutablePoints[q]) == p.slopeTo(mutablePoints[q + 1])) {
-                    if (segmentSize == 1)
-                        segmentStart = q;
-                    ++segmentSize;
+            Arrays.sort(mutatePoints, 0, mutatePoints.length, p.slopeOrder());
+            int k = 1;
+            while (k < n) {
+                Point currenPt = mutatePoints[k];
+                double currentPtSlope = p.slopeTo(currenPt);
+                List<Point> collinearPoints = new LinkedList<>();
+                collinearPoints.add(p);
+                collinearPoints.add(currenPt);
+                k = k + 1;
+                while (k < n) {
+                    Point nextPt = mutatePoints[k];
+                    if (p.slopeTo(nextPt) != currentPtSlope) break;
+                    collinearPoints.add(nextPt);
+                    k = k + 1;
                 }
-                else {
-                    if (segmentSize >= 3)
-                        constructSegment(segmentSize, segmentStart, mutablePoints, p, tmpSegments);
-                    segmentSize = 1;
+                if (collinearPoints.size() >= 4) {
+                    Point[] array = collinearPoints.toArray(new Point[0]);
+                    Arrays.sort(array, 0, array.length);
+                    if (p.compareTo(array[0]) <= 0) {
+                        LineSegment ls = new LineSegment(array[0], array[array.length - 1]);
+                        tmpLineSegments.add(ls);
+                    }
                 }
             }
-            if (segmentSize >= 3)
-                constructSegment(segmentSize, segmentStart, mutablePoints, p, tmpSegments);
         }
-
-        segments = tmpSegments.toArray(new LineSegment[0]);
-    }
-
-    private void constructSegment(int segmentSize, int segmentStart, Point[] mutablePoints, Point p,
-                                  List<LineSegment> tmpSegments) {
-        Point[] segmentPoints = new Point[segmentSize + 1]; // Plus one for that point 'p'
-        segmentPoints[0] = p;
-        for (int pos = 0; pos < segmentSize; ++pos) {
-            segmentPoints[pos + 1] = mutablePoints[segmentStart + pos];
-        }
-
-        Arrays.sort(segmentPoints, 0, segmentPoints.length);
-        if (p.compareTo(segmentPoints[0]) <= 0)
-            tmpSegments
-                    .add(new LineSegment(segmentPoints[0], segmentPoints[segmentSize]));
-    }
-
-    private boolean containsNullPoint(Point[] points) {
-        return Arrays.stream(points).anyMatch(Objects::isNull);
-    }
-
-    private boolean repeatedPoint(Point[] points) {
-        Arrays.sort(points);
-        for (int i = 0; i < points.length - 1; ++i) {
-            if (points[i].compareTo(points[i + 1]) == 0)
-                return true;
-        }
-        return false;
+        this.lineSegments = tmpLineSegments.toArray(new LineSegment[0]);
     }
 
     public int numberOfSegments() {
-        return segments.length;
+        // the number of line segments
+        return lineSegments.length;
     }
 
     public LineSegment[] segments() {
-        return Arrays.stream(segments).toArray(LineSegment[]::new);
+        // the line segments
+        return Arrays.copyOf(lineSegments, lineSegments.length);
     }
 
     public static void main(String[] args) {
-
-        // read the n points from a file
-        In in = new In(args[0]);
-        int n = in.readInt();
-        Point[] points = new Point[n];
-        for (int i = 0; i < n; i++) {
-            int x = in.readInt();
-            int y = in.readInt();
-            points[i] = new Point(x, y);
-        }
-
-        // set color and size
-        StdDraw.setPenColor(StdDraw.BLUE);
-        StdDraw.setPenRadius(0.0075);
-        StdDraw.enableDoubleBuffering();
-        StdDraw.setXscale(0, 32768);
-        StdDraw.setYscale(0, 32768);
-
-        // print and draw the line segments
-        FastCollinearPoints collinear = new FastCollinearPoints(points);
-        for (LineSegment segment : collinear.segments()) {
-            StdOut.println(segment);
-            segment.draw();
-        }
-        StdOut.println(collinear.numberOfSegments());
-        StdDraw.show();
+        Point[] points = new Point[] {
+                new Point(7372, 8695),
+                new Point(6053, 8242),
+                new Point(7194, 10373),
+                new Point(1620, 9564),
+                new Point(12822, 14447),
+                new Point(14187, 13214),
+                new Point(11793, 4718),
+                new Point(5434, 7768),
+                new Point(13186, 11476),
+                new Point(6141, 12300),
+                new Point(321, 9438),
+                new Point(1187, 9522),
+                new Point(5973, 288),
+                new Point(6225, 18306),
+                new Point(6311, 9198),
+                new Point(10946, 13089),
+                new Point(6698, 10632),
+                new Point(11146, 10488),
+                new Point(6213, 17448),
+                new Point(4892, 3940),
+                new Point(10602, 10240),
+                new Point(11527, 3774),
+                new Point(13760, 15126),
+                new Point(14453, 14158),
+                };
+        FastCollinearPoints fp = new FastCollinearPoints(points);
+        System.out.println(Arrays.toString(fp.segments()));
     }
 }

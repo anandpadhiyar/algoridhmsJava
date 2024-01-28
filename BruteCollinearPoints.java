@@ -16,14 +16,17 @@ public class BruteCollinearPoints {
         if (points == null) throw new IllegalArgumentException();
         Point[] mutatedPoints = Arrays.copyOf(points, points.length);
 
-        for (int i = 0; i < (mutatedPoints.length - 1); i++) {
-            Point currPoint = mutatedPoints[i];
-            Point nxtPoint = mutatedPoints[i + 1];
-            if (currPoint == null || nxtPoint == null) throw new IllegalArgumentException();
-            if (currPoint.compareTo(nxtPoint) == 0) throw new IllegalArgumentException();
+        for (int i = 0; i < mutatedPoints.length; i++) {
+            if (mutatedPoints[i] == null) throw new IllegalArgumentException();
         }
 
         Arrays.sort(mutatedPoints);
+        for (int i = 0; i < (mutatedPoints.length - 1); i++) {
+            Point currPoint = mutatedPoints[i];
+            Point nxtPoint = mutatedPoints[i + 1];
+            if (currPoint.compareTo(nxtPoint) == 0) throw new IllegalArgumentException();
+        }
+
         int n = mutatedPoints.length;
         if (n < 4) {
             this.lineSegments = new LineSegment[0];
